@@ -1,7 +1,7 @@
-#include <SPI.h>
 #include <Arduino.h>
-#include <assert.h>
-#include <avr/interrupt.h>
+#include <SPI.h>
+//#include <assert.h>
+//#include <avr/interrupt.h>
 #include "nRF8001.h"
 #include "services.h"
 
@@ -9,6 +9,8 @@
 #undef PROGMEM
 #define PROGMEM __attribute__((section(".progmem.data")))
 #endif
+
+#define assert(a)
 
 hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] = SETUP_MESSAGES_CONTENT;
 
@@ -30,6 +32,7 @@ nRFCmd nRF8001::setup()
             break;
         } else {
             nrf_debug("Received message in setup but device not ready for setup");
+			nrf_debug((int)deviceState);
         }
     }
 
@@ -117,12 +120,12 @@ nRF8001::nRF8001(uint8_t reset_pin_arg,
     digitalWrite(MOSI, LOW);
     digitalWrite(SS, HIGH);
 
+	SPI.begin();
     // SPI mode 0; /16 clock divider
     SPI.setDataMode(SPI_MODE0);
     SPI.setBitOrder(LSBFIRST);
-    SPI.setClockDivider(SPI_CLOCK_DIV16);
-    SPI.begin();
-
+	SPI.setClockDivider(SPI_CLOCK_DIV32);
+	
     // Load up the first setup message and start interrupts
 #if NB_SETUP_MESSAGES < 1
 #error Make sure you included devices.h from nRFgo Studio, or try services.h.example
@@ -711,6 +714,9 @@ nRFTxStatus nRF8001::transmitReceive(nRFCommand *txCmd, uint16_t timeout)
 
     assert(rxEvent->length <= NRF_MAX_PACKET_LENGTH);
 
+	Serial.println("length");
+	Serial.println(txLength);
+
     // nextByte points to the next byte to be transferred in
     // txBuffer, or the next byte to be received in rxBuffer
     // For TX, packets are data + 1 byte (length)
@@ -744,7 +750,8 @@ nRFTxStatus nRF8001::transmitReceive(nRFCommand *txCmd, uint16_t timeout)
     switch (rxEvent->event) {
         case NRF_DEVICESTARTEDEVENT:
             credits = rxEvent->msg.deviceStarted.dataCreditAvailable;
-
+			nrf_debug("started");
+			Serial.print(rxEvent->msg.deviceStarted.operatingMode, HEX);
             switch (rxEvent->msg.deviceStarted.operatingMode) {
                 case 0x01:
                     deviceState = Test;

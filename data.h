@@ -3,6 +3,9 @@
 #ifndef _NRF8001_DATA_H
 #define _NRF8001_DATA_H
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct nRFCommand {
     uint8_t length;
     uint8_t command;
@@ -185,5 +188,7 @@ struct nRFEvent {
         nRFPipe servicePipeNo;
     } msg;
 };
+
+#pragma pack(pop)
 
 #endif /* _NRF8001_DATA_H */
